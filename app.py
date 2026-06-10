@@ -21,7 +21,7 @@ EXAMPLE_QUESTIONS = [
     "My calathea has brown edges. Is it the humidity?",
     "What are some good low-light plants for my apartment?",
     "Why does my boston fern keep losing fronds?",
-    "How do I care for my string of pearls?",   # not in database — tests graceful degradation
+    "How do I care for my string of pearls?",  # not in database — tests graceful degradation
 ]
 
 
@@ -36,12 +36,10 @@ def chat(message: str, history: list) -> str:
 
 with gr.Blocks(title="Plant Advisor") as demo:
 
-    gr.Markdown(
-        """
+    gr.Markdown("""
 # 🌿 Plant Advisor
 *Ask me anything about caring for your houseplants.*
-"""
-    )
+""")
 
     with gr.Row():
         # Sidebar
@@ -62,13 +60,13 @@ with gr.Blocks(title="Plant Advisor") as demo:
         with gr.Column(scale=3):
             chatbot = gr.ChatInterface(
                 fn=chat,
-                type="messages",
+                # type="messages", # comment out due to version mismatch error
                 examples=EXAMPLE_QUESTIONS,
                 chatbot=gr.Chatbot(
                     height=520,
                     placeholder="<em>Ask me about your plants...</em>",
                     show_label=False,
-                    type="messages",
+                    # type="messages",  # comment out due to version mismatch error
                 ),
                 textbox=gr.Textbox(
                     placeholder="e.g. How often should I water my monstera?",
