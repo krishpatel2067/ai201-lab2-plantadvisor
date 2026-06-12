@@ -32,7 +32,7 @@ def lookup_plant(plant_name: str) -> dict:
     """
     Search the plant database for a plant by name and return its care information.
 
-    TODO — Milestone 1:
+    ☑️ — Milestone 1:
 
     Right now this always returns a "not found" response. Your job is to implement
     the search logic so it can actually find plants.
@@ -74,13 +74,13 @@ def lookup_plant(plant_name: str) -> dict:
 
     # 3. search aliases
     for plant in _plant_db.values():
-        if normalized in [alias.lower() for alias in plant["aliases"]]:
+        if any(alias.lower() == normalized for alias in plant["aliases"]):
             return {"found": True, "plant": plant}
 
     return {
         "found": False,
         "name": plant_name,
-        "message": "Plant lookup not yet implemented. Complete Milestone 1.",
+        "message": f"Plant '{plant_name}' not found in the database as a key, display name, nor alias. Resort to general advice from training data.",
     }
 
 

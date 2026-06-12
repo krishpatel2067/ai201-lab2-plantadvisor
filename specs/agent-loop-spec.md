@@ -120,12 +120,14 @@ for tool_call in assistant_message.tool_calls:
 ### Loop termination conditions
 
 _The loop should stop when: (a) the LLM returns a response with no tool calls, OR (b) the MAX_TOOL_ROUNDS limit is reached. Describe how you will detect each condition and what you will return in each case._
-TODO here, Milestone 1 finished?
 
 ```
 (a) `if not assistant_message.tool_calls` - return that there are no tool calls
 
 (b) Use for loop that runs for MAX_TOOL_ROUNDS iters - once exhausted return msg saying limit reached
+
+Better solution that combines both checks in one: update `response` var and check both conditions in a while loop:
+`while response.choices[0].message.tool_calls and iter < MAX_TOOL_ROUNDS:`
 ```
 
 ---
@@ -134,8 +136,10 @@ TODO here, Milestone 1 finished?
 
 _Once the loop exits because there are no more tool calls, how do you extract the text content from the response object? What field holds the string you should return?_
 
+The final text content will be found in the assistant message just like the other iterations:
+
 ```
-[your answer here]
+response.choices[0].message.content
 ```
 
 ---
@@ -148,19 +152,23 @@ _Fill this in after implementing and testing._
 
 ```
 Query: "How should I care for my calathea?"
-Round 1 tool call: [tool name, args]
-Round 2 tool call: [tool name, args] (if any)
-Final response: [brief description]
+Round 1 tool call: lookup_plant({'plant_name': 'calathea'})
+Final response:
+"According to the care data for your calathea, to care for your plant, you should water it every 1-2 weeks, keeping the soil consistently moist but not soggy. It's also important to use filtered, distilled, or rainwater to prevent brown edges. In terms of light, your calathea prefers low to medium indirect light, and direct sun will bleach and damage the distinctive leaf markings. It's also important to maintain high humidity (50%+) and keep the temperature between 60-80°F (15-27°C).
+
+You can fertilize your calathea monthly during the growing season with a diluted balanced fertilizer. Some common issues to watch out for include brown leaf edges from tap water minerals or dry air, leaf curling from underwatering or low humidity, and yellowing from overwatering."
+
+If you'd like to know how to care for your calathea during a specific season, I can look up seasonal care adjustments for you.
 ```
 
 **What happens when you ask about a plant that isn't in the database?**
 
 ```
-[describe the behavior you observed]
+When I asked, "How should I care for my dragon tree?", the agent executed a tool call to look up "dragon tree". Then it interestingly performed another look up for "Dracaena", the genus name for a dragon tree, which it must've pulled from its training data. After both look ups returned the not-found message, the agent expectedly replied that the plant doesn't exist in the database. It then gave general advice on caring for a dragon tree, presumably from its training data. Finally, it was careful to guide me to an expert for specific advice.
 ```
 
 **One thing about the tool call API that surprised you:**
 
 ```
-[your answer here]
+I'm surprised by how simple it is. I was intimidated at first, but after completing this lab and following along the Groq docs, I feel like the tool call API is very simple to use.
 ```

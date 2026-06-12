@@ -61,19 +61,19 @@ Tool functions (`tools.py`) are pure data retrieval — they take arguments and 
 
 ## Component Status
 
-| Component | File | Status | Who builds it |
-|-----------|------|--------|---------------|
-| Gradio UI | `app.py` | ✅ Complete | (built) |
-| Config | `config.py` | ✅ Complete | (built) |
-| Plant database | `data/plants.json` | ✅ Complete | (built) |
-| Seasonal data | `data/seasons.json` | ✅ Complete | (built) |
-| Tool definitions (schemas) | `agent.py` | ✅ Complete | (built) |
-| Tool dispatch | `agent.py` | ✅ Complete | (built) |
-| System prompt | `agent.py` | ✅ Complete | (built) |
-| `lookup_plant()` | `tools.py` | 🔲 Student spec + implementation | Milestone 1 |
-| `get_seasonal_conditions()` | `tools.py` | 🔲 Student spec + implementation | Milestone 1 |
-| `run_agent()` | `agent.py` | 🔲 Student spec + implementation | Milestone 2 |
-| Graceful degradation | `tools.py` + `agent.py` | 🔲 Student analysis + improvement | Milestone 3 |
+| Component                   | File                    | Status                            | Who builds it |
+| --------------------------- | ----------------------- | --------------------------------- | ------------- |
+| Gradio UI                   | `app.py`                | ✅ Complete                       | (built)       |
+| Config                      | `config.py`             | ✅ Complete                       | (built)       |
+| Plant database              | `data/plants.json`      | ✅ Complete                       | (built)       |
+| Seasonal data               | `data/seasons.json`     | ✅ Complete                       | (built)       |
+| Tool definitions (schemas)  | `agent.py`              | ✅ Complete                       | (built)       |
+| Tool dispatch               | `agent.py`              | ✅ Complete                       | (built)       |
+| System prompt               | `agent.py`              | ✅ Complete                       | (built)       |
+| `lookup_plant()`            | `tools.py`              | 🔲 Student spec + implementation  | Milestone 1   |
+| `get_seasonal_conditions()` | `tools.py`              | 🔲 Student spec + implementation  | Milestone 1   |
+| `run_agent()`               | `agent.py`              | 🔲 Student spec + implementation  | Milestone 2   |
+| Graceful degradation        | `tools.py` + `agent.py` | 🔲 Student analysis + improvement | Milestone 3   |
 
 ---
 
@@ -91,6 +91,7 @@ Tool functions (`tools.py`) are pure data retrieval — they take arguments and 
 ## Data Sources
 
 **`data/plants.json`** — 15 common houseplants, each with:
+
 - `display_name`, `scientific_name`, `aliases`
 - `difficulty` level
 - `watering` (frequency, description, over/underwatering signs)
@@ -100,6 +101,7 @@ Tool functions (`tools.py`) are pure data retrieval — they take arguments and 
 - `seasonal_notes` (brief per-season adjustments)
 
 **`data/seasons.json`** — 4 seasons (spring/summer/fall/winter), each with:
+
 - `description`, `months`
 - `watering`, `fertilizing`, `light`, `repotting`, `pests` guidance
 - `general_tip`
@@ -117,6 +119,7 @@ tool_call.id                  → a unique ID linking this call to its result
 ```
 
 To feed the tool result back to the LLM, you append two things to the messages list:
+
 1. The assistant message that contained the `tool_calls` (append the message object directly)
 2. A tool result message for each tool call: `{"role": "tool", "content": <result string>, "tool_call_id": <id>}`
 

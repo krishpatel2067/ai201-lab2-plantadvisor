@@ -72,7 +72,11 @@ likely match for clean user input. Aliases are the broadest net, so they go last
 _Aliases are stored as a list of strings. How will you check if the normalized input matches any alias in the list? Write your approach in pseudocode or plain English._
 
 ```
+# one method
 normalized in [alias.lower() for alias in plant["aliases"]]
+
+# another (more efficient and Pythonic) method
+any(alias.lower() == normalized for alias in plant["aliases"])
 ```
 
 ---
@@ -82,7 +86,7 @@ normalized in [alias.lower() for alias in plant["aliases"]]
 _When a plant isn't found, the agent will read your message and use it to decide what to tell the user. Write the exact string you'll return — make it useful to the agent, not just to a human reading logs._
 
 ```
-Plant <plant> not found in the database as a direct name, display name, nor an alias. Please check spelling and puncutation.
+Plant '<plant>' not found in the database as a key, display name, nor alias. Please check spelling and punctuation.
 ```
 
 ---

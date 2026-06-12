@@ -70,7 +70,8 @@ SYSTEM_PROMPT = (
     "and current seasonal conditions using your available tools.\n\n"
     "Always use your tools to look up plant-specific information before answering — "
     "don't rely on your general knowledge alone. If a plant isn't in your database, "
-    "say so clearly and offer general guidance based on what the user describes.\n\n"
+    "say so clearly and offer general guidance based on what the user describes. "
+    "The general guidance should be useful to the user, but more importantly, accurate.\n\n"
     "Keep your advice practical and specific. Cite the source of your information "
     "when you have it (e.g., 'According to the care data for your monstera...')."
 )
@@ -83,6 +84,7 @@ SYSTEM_PROMPT = (
 # what the Groq API expects for tool results).
 # ──────────────────────────────────────────────
 
+
 def dispatch_tool(tool_name: str, tool_args: dict) -> str:
     """Route a tool call to the correct function and return the result as a JSON string."""
     print(f"  → Tool call: {tool_name}({tool_args})")
@@ -92,7 +94,9 @@ def dispatch_tool(tool_name: str, tool_args: dict) -> str:
         result = get_seasonal_conditions(tool_args.get("season"))
     else:
         result = {"error": f"Unknown tool: {tool_name}"}
-    print(f"  ← Result: {json.dumps(result)[:120]}{'...' if len(json.dumps(result)) > 120 else ''}")
+    print(
+        f"  ← Result: {json.dumps(result)[:120]}{'...' if len(json.dumps(result)) > 120 else ''}"
+    )
     return json.dumps(result)
 
 
@@ -100,11 +104,12 @@ def dispatch_tool(tool_name: str, tool_args: dict) -> str:
 # Agent loop
 # ──────────────────────────────────────────────
 
+
 def run_agent(user_message: str, history: list) -> str:
     """
     Run the plant care agent for one user turn and return its response.
 
-    TODO — Milestone 2:
+    ☑️ — Milestone 2:
 
     The agent loop follows a specific pattern that you'll implement here. Read
     specs/agent-loop-spec.md carefully before writing any code — understand the
@@ -128,4 +133,116 @@ def run_agent(user_message: str, history: list) -> str:
 
     Before writing code, complete specs/agent-loop-spec.md.
     """
-    return "🌱 Agent not yet implemented. Complete Milestone 2 to activate the Plant Advisor."
+    # 1. Create messages list
+    # msgs has system prompt, history (usr, assistant, so on), new usr msg
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    def _extract_text(raw_content):
+        if raw_content is None:
+            return ""
+        if isinstance(raw_content, str):
+            return raw_content
+        if isinstance(raw_content, list) and raw_content:
+            first = raw_content[0]
+            if isinstance(first, dict):
+                return first.get("text", "")
+            if isinstance(first, str):
+                return first
+        return ""
+
+    for hist_item in history:
+        if isinstance(hist_item, (list, tuple)) and len(hist_item) >= 2:
+            msgs.append({"role": "user", "content": _extract_text(hist_item[0])})
+            if hist_item[1] is not None:
+                msgs.append(
+                    {"role": "assistant", "content": _extract_text(hist_item[1])}
+                )
+        elif isinstance(hist_item, dict):
+            role = hist_item.get("role")
+            if role in {"user", "assistant"}:
+                msgs.append(
+                    {"role": role, "content": _extract_text(hist_item.get("content"))}
+                )
+
+    msgs.append({"role": "user", "content": user_message})
+
+    # 2. Call the LLM, retrying once without tool use on errors,
+    # then handling gracefully
+    def _create_completion(messages, use_tools=True):
+        kwargs = {"model": LLM_MODEL, "messages": messages}
+        if use_tools:
+            kwargs["tools"] = TOOL_DEFINITIONS
+            kwargs["tool_choice"] = "auto"
+        else:
+            kwargs["tool_choice"] = "none"
+        return _client.chat.completions.create(**kwargs)
+
+    def _is_400_error(exc):
+        status = (
+            getattr(exc, "status_code", None)
+            or getattr(exc, "status", None)
+            or getattr(exc, "code", None)
+        )
+        if status == 400 or status == "400":
+            return True
+        message = str(exc).lower()
+        return "400" in message or "bad request" in message
+
+    try:
+        res = _create_completion(msgs, use_tools=True)
+    except Exception as exc:
+        if _is_400_error(exc):
+            try:
+                res = _create_completion(msgs, use_tools=False)
+                return (
+                    "I couldn't use the plant lookup tools right now, "
+                    "but I can still answer from general plant care knowledge.\n\n"
+                    + res.choices[0].message.content
+                )
+            except Exception:
+                return (
+                    "Sorry, the plant advisor is temporarily unavailable. "
+                    "Please try again in a moment."
+                )
+        return (
+            "Sorry, the plant advisor is temporarily unavailable. "
+            "Please try again in a moment."
+        )
+
+    i = 0
+
+    # 3. Run the agent loop
+    while (res_msg := res.choices[0].message).tool_calls and (
+        i := i + 1
+    ) <= MAX_TOOL_ROUNDS:
+        print(f"{i=}")
+        # a. Append assistant message *before* any tool calls
+        msgs.append(res_msg)
+
+        for tc in res_msg.tool_calls:
+            # b. Call the respective tool and append tool results
+            msgs.append(
+                {
+                    "role": "tool",
+                    "content": dispatch_tool(
+                        tc.function.name, json.loads(tc.function.arguments) or {}
+                    ),
+                    "tool_call_id": tc.id,
+                }
+            )
+
+        # c. Call the LLM with updated msgs
+        res = _client.chat.completions.create(
+            model=LLM_MODEL,
+            messages=msgs,
+            tools=TOOL_DEFINITIONS,
+            tool_choice="auto",  # default
+        )
+
+    # 4. Return the final text response
+    fallback = (
+        ""
+        if i <= MAX_TOOL_ROUNDS
+        else "Thought process interrupted - answer may not be complete.\n\n"
+    )
+    return fallback + (res_msg.content or "")
